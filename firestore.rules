@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.displayName is string && data.displayName.size() <= 200 &&
+             data.role in ['SUPER_ADMIN', 'ADMIN_SPMB', 'KEPALA_SEKOLAH'];
+    }
+
+    function isValidApplicant(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.registrationNumber is string && data.registrationNumber.size() >= 3 && data.registrationNumber.size() <= 50 &&
+             data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 200 &&
+             (!('nisn' in data) || data.nisn == null || (data.nisn is string && data.nisn.size() <= 30)) &&
+             data.gender in ['Laki-laki', 'Perempuan'] &&
+             data.schoolOrigin is string && data.schoolOrigin.size() >= 2 && data.schoolOrigin.size() <= 200 &&
+             data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+             data.majorCode in ['TKJ', 'TO', 'TSM', 'DKV', 'AK'] &&
+             data.verificationStatus in ['Menunggu verifikasi', 'Terverifikasi', 'Perlu perbaikan'] &&
+             data.admissionStatus in ['Menunggu keputusan', 'Diterima', 'Tidak diterima'] &&
+             (!('adminNotes' in data) || data.adminNotes == null || (data.adminNotes is string && data.adminNotes.size() <= 1000));
+    }
+
+    function isValidSchoolSettings(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.schoolName is string && data.schoolName.size() >= 2 && data.schoolName.size() <= 200 &&
+             data.academicYear is string && data.academicYear.size() >= 4 && data.academicYear.size() <= 50 &&
+             data.overallTarget is int && data.overallTarget >= 0 && data.overallTarget <= 10000 &&
+             data.principalName is string && data.principalName.size() <= 200 &&
+             data.principalWhatsApp is string && data.principalWhatsApp.size() <= 50 &&
+             data.adminName is string && data.adminName.size() <= 200 &&
+             data.adminWhatsApp is string && data.adminWhatsApp.size() <= 50 &&
+             (!('dailyReportTime' in data) || (data.dailyReportTime is string && data.dailyReportTime.size() <= 20)) &&
+             (!('notifyPrincipalOnNewApplicant' in data) || data.notifyPrincipalOnNewApplicant is bool) &&
+             (!('notifyAdminOnNewApplicant' in data) || data.notifyAdminOnNewApplicant is bool) &&
+             (!('waCloudApiToken' in data) || data.waCloudApiToken == null || (data.waCloudApiToken is string && data.waCloudApiToken.size() <= 1000)) &&
+             (!('waCloudPhoneNumberId' in data) || data.waCloudPhoneNumberId == null || (data.waCloudPhoneNumberId is string && data.waCloudPhoneNumberId.size() <= 100));
+    }
+
+    function isValidNotificationLog(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.recipientType in ['KEPALA_SEKOLAH', 'ADMIN_SPMB', 'KEDUANYA', 'SISWA'] &&
+             data.recipientName is string && data.recipientName.size() <= 200 &&
+             data.recipientNumber is string && data.recipientNumber.size() <= 50 &&
+             data.reportType in ['HARIAN', 'MINGGUAN', 'BULANAN', 'PENDAFTAR_BARU', 'TEST'] &&
+             data.status in ['BERHASIL', 'TERKIRIM_VIA_WA', 'PENDING', 'GAGAL'] &&
+             data.messageContent is string && data.messageContent.size() <= 5000;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming());
+      allow update: if isOwner(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming());
+      allow delete: if isOwner(userId);
+
+      // Applicants Subcollection
+      match /applicants/{applicantId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(applicantId) &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidApplicant(incoming());
+        allow update: if isOwner(userId) &&
+                         isValidId(applicantId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidApplicant(incoming());
+        allow delete: if isOwner(userId) && isValidId(applicantId);
+      }
+
+      // Settings Subcollection
+      match /settings/{settingId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(settingId) &&
+                         incoming().userId == request.auth.uid &&
+                         isValidSchoolSettings(incoming());
+        allow update: if isOwner(userId) &&
+                         isValidId(settingId) &&
+                         incoming().userId == existing().userId &&
+                         isValidSchoolSettings(incoming());
+        allow delete: if isOwner(userId) && isValidId(settingId);
+      }
+
+      // Notification Logs Subcollection
+      match /notification_logs/{logId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(logId) &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidNotificationLog(incoming());
+        allow update, delete: if isOwner(userId) && isValidId(logId);
+      }
+    }
+  }
+}

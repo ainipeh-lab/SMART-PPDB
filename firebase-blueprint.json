@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role-based access for SPMB system",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user's Google UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Full name of the user"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["SUPER_ADMIN", "ADMIN_SPMB", "KEPALA_SEKOLAH"],
+          "description": "Role within SPMB administration"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of registration"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["userId", "email", "displayName", "role", "createdAt"]
+    },
+    "Applicant": {
+      "title": "Applicant",
+      "description": "New student candidate record for SPMB",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of owner/creator"
+        },
+        "registrationNumber": {
+          "type": "string",
+          "description": "Unique registration code, e.g. SPMB-2027-001"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full legal name of candidate"
+        },
+        "nisn": {
+          "type": "string",
+          "description": "National student identification number"
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["Laki-laki", "Perempuan"],
+          "description": "Gender of applicant"
+        },
+        "schoolOrigin": {
+          "type": "string",
+          "description": "Junior high school of origin"
+        },
+        "phone": {
+          "type": "string",
+          "description": "WhatsApp contact number"
+        },
+        "majorCode": {
+          "type": "string",
+          "enum": ["TKJ", "TO", "TSM", "DKV", "AK"],
+          "description": "Selected vocational major"
+        },
+        "registrationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission date"
+        },
+        "verificationStatus": {
+          "type": "string",
+          "enum": ["Menunggu verifikasi", "Terverifikasi", "Perlu perbaikan"],
+          "description": "Document verification status"
+        },
+        "admissionStatus": {
+          "type": "string",
+          "enum": ["Menunggu keputusan", "Diterima", "Tidak diterima"],
+          "description": "Final admission result"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal notes from admin"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Document creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Document modification timestamp"
+        }
+      },
+      "required": ["userId", "registrationNumber", "fullName", "gender", "schoolOrigin", "phone", "majorCode", "verificationStatus", "admissionStatus", "createdAt"]
+    },
+    "SchoolSettings": {
+      "title": "SchoolSettings",
+      "description": "School configuration, targets, and WhatsApp recipient info",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User UID who owns configuration"
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Official name of the school"
+        },
+        "academicYear": {
+          "type": "string",
+          "description": "Academic year, e.g. 2027/2028"
+        },
+        "overallTarget": {
+          "type": "integer",
+          "description": "Target quota for total new students"
+        },
+        "principalName": {
+          "type": "string",
+          "description": "School principal full name"
+        },
+        "principalWhatsApp": {
+          "type": "string",
+          "description": "Principal WhatsApp number in international format"
+        },
+        "adminName": {
+          "type": "string",
+          "description": "SPMB administrator full name"
+        },
+        "adminWhatsApp": {
+          "type": "string",
+          "description": "Admin WhatsApp number in international format"
+        },
+        "dailyReportTime": {
+          "type": "string",
+          "description": "Scheduled time for daily report, e.g. 16:00"
+        },
+        "notifyPrincipalOnNewApplicant": {
+          "type": "boolean",
+          "description": "Send instant notification to principal on each registration"
+        },
+        "notifyAdminOnNewApplicant": {
+          "type": "boolean",
+          "description": "Send instant notification to admin on each registration"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["userId", "schoolName", "academicYear", "overallTarget", "principalName", "principalWhatsApp", "adminName", "adminWhatsApp"]
+    },
+    "NotificationLog": {
+      "title": "NotificationLog",
+      "description": "Log of WhatsApp reports and notifications dispatched",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Log ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User UID"
+        },
+        "recipientType": {
+          "type": "string",
+          "enum": ["KEPALA_SEKOLAH", "ADMIN_SPMB", "KEDUANYA", "SISWA"],
+          "description": "Recipient group"
+        },
+        "recipientName": {
+          "type": "string",
+          "description": "Recipient name"
+        },
+        "recipientNumber": {
+          "type": "string",
+          "description": "WhatsApp destination number"
+        },
+        "reportType": {
+          "type": "string",
+          "enum": ["HARIAN", "MINGGUAN", "BULANAN", "PENDAFTAR_BARU", "TEST"],
+          "description": "Category of report"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["BERHASIL", "TERKIRIM_VIA_WA", "PENDING", "GAGAL"],
+          "description": "Dispatch outcome"
+        },
+        "messageContent": {
+          "type": "string",
+          "description": "Body of the WhatsApp message"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Dispatch timestamp"
+        }
+      },
+      "required": ["userId", "recipientType", "recipientName", "recipientNumber", "reportType", "status", "messageContent", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profile collection"
+    },
+    "/users/{userId}/applicants/{applicantId}": {
+      "schema": { "$ref": "Applicant" },
+      "description": "Per-user student applicants collection"
+    },
+    "/users/{userId}/settings/school": {
+      "schema": { "$ref": "SchoolSettings" },
+      "description": "Per-user school settings document"
+    },
+    "/users/{userId}/notification_logs/{logId}": {
+      "schema": { "$ref": "NotificationLog" },
+      "description": "Per-user notification dispatch log entries"
+    }
+  }
+}
